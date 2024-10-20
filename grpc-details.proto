@@ -1,0 +1,49 @@
+syntax ="proto3";
+
+package lab6service;
+
+// Request schema
+message addNumbersReq {
+    int32 num1 = 1;
+    int32 num2 = 2;
+}
+
+message rawImageReq {
+    bytes img = 1;
+}
+
+message rawJsonReq {
+    string imgString = 1;
+}
+
+message dotProductReq {
+    repeated float num1 = 1;
+    repeated float num2 = 2;
+}
+
+// Response schema
+message addition {
+    int32 sum = 1;
+}
+
+message dotProduct {
+    float dotProduct = 1;
+}
+
+message rawImageDims {
+    int32 width = 1;
+    int32 height = 2;
+}
+
+message jsonImageDims {
+    int32 width = 1;
+    int32 height = 2;
+}
+
+// Service Interface
+service lab6service {
+    rpc doAdd(addNumbersReq) returns (addition) {}
+    rpc doDotProduct(dotProductReq) returns (dotProduct) {}
+    rpc doRawImage(rawImageReq) returns (rawImageDims) {}
+    rpc doJsonImage(rawJsonReq) returns (jsonImageDims) {}
+}

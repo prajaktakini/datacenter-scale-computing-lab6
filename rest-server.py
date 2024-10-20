@@ -17,6 +17,7 @@ import jsonpickle
 from PIL import Image
 import base64
 import io
+import json
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -27,9 +28,12 @@ log.setLevel(logging.DEBUG)
 
 @app.route('/api/add/<int:a>/<int:b>', methods=['GET', 'POST'])
 def add(a,b):
-    response = {'sum' : str( a + b)}
-    response_pickled = jsonpickle.encode(response)
-    return Response(response=response_pickled, status=200, mimetype="application/json")
+    try:
+        response = {'sum' : str( a + b)}
+        response_pickled = jsonpickle.encode(response)
+        return Response(response=response_pickled, status=200, mimetype="application/json")
+    except Exception as e:
+        print(e)
 
 # route http posts to this method
 @app.route('/api/rawimage', methods=['POST'])
@@ -39,12 +43,13 @@ def rawimage():
     try:
         ioBuffer = io.BytesIO(r.data)
         img = Image.open(ioBuffer)
-    # build a response dict to send back to client
+        # build a response dict to send back to client
         response = {
             'width' : img.size[0],
             'height' : img.size[1]
             }
-    except:
+    except Exception as e:
+        print("Error ", e)
         response = { 'width' : 0, 'height' : 0}
     # encode response using jsonpickle
     response_pickled = jsonpickle.encode(response)
@@ -53,12 +58,52 @@ def rawimage():
 
 @app.route('/api/dotproduct', methods=['POST'])
 def dotproduct():
-    pass
+    r = request
+    try:
+        data = json.loads(r.data.decode('utf-8'))
+        a = data['a']
+        b = data['b']
+
+        print(a)
+        print(b)
+
+        c = 0
+        for a, b in zip(a, b):
+            c += a * b
+        response = {'dotproduct': str(c)}
+    except Exception as e:
+        print("Error ", e)
+        response = {'dotproduct': 'Something Wrong!'}
+        # encode response using jsonpickle
+    response_pickled = jsonpickle.encode(response)
+
+    return Response(response=response_pickled, status=200, mimetype="application/json")
+
 
 # route http posts to this method
 @app.route('/api/jsonimage', methods=['POST'])
 def jsonimage():
-    pass
+    r = request
+    # convert the data to a PIL image type so we can extract dimensions
+    try:
+        data = json.loads(r.data.decode('utf-8'))
+
+        ioBuffer = io.BytesIO(base64.b64decode(data['image']))
+        img = Image.open(ioBuffer)
+
+        # build a response dict to send back to client
+        response = {
+            'width': img.width,
+            'height': img.height
+        }
+
+    except Exception as e:
+        print("Error ", e)
+        response = {'width': 0, 'height': 0}
+    # encode response using jsonpickle
+    response_pickled = jsonpickle.encode(response)
+
+    return Response(response=response_pickled, status=200, mimetype="application/json")
 
 # start flask app
-app.run(host="0.0.0.0", port=5000)
+app.run(host="0.0.0.0", port=50050)

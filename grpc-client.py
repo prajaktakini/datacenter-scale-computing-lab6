@@ -1,75 +1,55 @@
 #!/usr/bin/env python3
 from __future__ import print_function
 
-from doctest import debug
+from base64 import b64encode
 
-import requests
 import json
 import time
 import sys
-import base64
-import jsonpickle
 import random
 
-from seaborn.external.husl import dot_product
+import grpc
+import grpc_details_pb2
+import grpc_details_pb2_grpc
 
-
-def doRawImage(addr, debug=False):
-    # prepare headers for http request
-    headers = {'content-type': 'image/png'}
+def doRawImage(debug=False):
     img = open('Flatirons_Winter_Sunrise_edit_2.jpg', 'rb').read()
-    # send http request with image and receive response
-    image_url = addr + '/api/rawimage'
-    response = requests.post(image_url, data=img, headers=headers)
+    req = grpc_details_pb2.rawImageReq(img=img)
+    response = stub.doRawImage(req)
+
     if debug:
         # decode response
-        print("Response is", response)
+        print("Do raw Image Response is", response)
         print(json.loads(response.text))
 
-def doAdd(addr, debug=False):
-    headers = {'content-type': 'application/json'}
-    # send http request with image and receive response
-    add_url = addr + "/api/add/5/10"
-    response = requests.post(add_url, headers=headers)
+def doAdd(debug=False):
+    req = grpc_details_pb2.addNumbersReq(num1= 5, num2=10)
+    response = stub.doAdd(req)
     if debug:
         # decode response
-        print("Response is", response)
+        print("Do Add Response is", response)
         print(json.loads(response.text))
 
 
-def doDotProduct(addr, debug=False):
+def doDotProduct(debug=False):
     a = [random.random() for i in range(100)]
     b = [random.random() for i in range(100)]
 
-    payload = {
-        "a": a,
-        "b": b
-    }
-
-    headers = {'content-type': 'application/json'}
-
-    # API URL
-    dot_product_url = addr + "/api/dotproduct"
-    response = requests.post(dot_product_url, data=json.dumps(payload), headers=headers)
+    req = grpc_details_pb2.dotProductReq(num1 = a, num2= b)
+    response = stub.doDotProduct(req)
     if debug:
         # decode response
-        print("Response is", response)
+        print("Do Dot Product Response is", response)
         print(json.loads(response.text))
 
-def doJsonImage(addr, debug=False):
-    # prepare headers for http request
-    headers = {'content-type': 'application/json'}
+def doJsonImage(debug=False):
     img = open('Flatirons_Winter_Sunrise_edit_2.jpg', 'rb').read()
-
-    imgString = base64.b64encode(img).decode('utf-8')
-    payload = {"image": imgString}
-    # API URL
-    image_url = addr + "/api/jsonimage"
-    response = requests.post(image_url, data=json.dumps(payload), headers=headers)
+    req = grpc_details_pb2.rawJsonReq(imgString= b64encode(img).decode('utf-8'))
+    response = stub.doJsonImage(req)
 
     if debug:
         # decode response
-        print("Response is", response)
+        print("Do JSON Image Response is", response)
         print(json.loads(response.text))
 
 if len(sys.argv) < 3:
@@ -81,31 +61,35 @@ host = sys.argv[1]
 cmd = sys.argv[2]
 reps = int(sys.argv[3])
 
-addr = f"http://{host}:50050"
+channel = grpc.insecure_channel('{}:50051'.format(host))
+stub = grpc_details_pb2_grpc.lab6serviceStub(channel)
+
+addr = f"http://{host}:5000"
 print(f"Running {reps} reps against {addr}")
+
 
 if cmd == 'rawImage':
     start = time.perf_counter()
     for x in range(reps):
-        doRawImage(addr)
+        doRawImage()
     delta = ((time.perf_counter() - start)/reps)*1000
     print("Took", delta, "ms per operation")
 elif cmd == 'add':
     start = time.perf_counter()
     for x in range(reps):
-        doAdd(addr)
+        doAdd()
     delta = ((time.perf_counter() - start)/reps)*1000
     print("Took", delta, "ms per operation")
 elif cmd == 'jsonImage':
     start = time.perf_counter()
     for x in range(reps):
-        doJsonImage(addr)
+        doJsonImage()
     delta = ((time.perf_counter() - start)/reps)*1000
     print("Took", delta, "ms per operation")
 elif cmd == 'dotProduct':
     start = time.perf_counter()
     for x in range(reps):
-        doDotProduct(addr)
+        doDotProduct()
     delta = ((time.perf_counter() - start)/reps)*1000
     print("Took", delta, "ms per operation")
 else:
